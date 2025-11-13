@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>REBELZ Admin – Update Truck Location</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet CSS for the map -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <img
+          src="rebelz-logo.png"
+          alt="REBELZ Food Truck logo"
+          class="logo-img"
+        />
+        <div>
+          <h1>REBELZ Admin</h1>
+          <p>Update the food truck location and download a new location.json.</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="main admin-main">
+      <section class="card card-info">
+        <h2>Location Details</h2>
+        <form id="locationForm" class="admin-form">
+          <label>
+            Latitude
+            <input type="number" id="lat" step="any" required />
+          </label>
+
+          <label>
+            Longitude
+            <input type="number" id="lng" step="any" required />
+          </label>
+
+          <label>
+            Location name (what customers see)
+            <input type="text" id="locationName" placeholder="Downtown, Main &amp; 5th" required />
+          </label>
+
+          <label>
+            Last updated (text)
+            <input
+              type="text"
+              id="lastUpdated"
+              placeholder="2025-11-13 11:45 AM"
+              required
+            />
+          </label>
+
+          <div class="admin-buttons">
+            <button type="button" class="btn btn-secondary" id="useNow">
+              Use current date &amp; time
+            </button>
+            <button type="submit" class="btn">
+              Update Preview &amp; JSON
+            </button>
+          </div>
+        </form>
+
+        <p class="sub">
+          After updating, click “Download location.json” and upload/replace it
+          in your hosting (Netlify, GitHub, etc.).
+        </p>
+      </section>
+
+      <section class="card card-map">
+        <h2>Preview Map</h2>
+        <div id="adminMap"></div>
+        <p class="sub" id="previewText">Enter a location and click “Update Preview &amp; JSON”.</p>
+      </section>
+
+      <section class="card card-json">
+        <h2>Generated location.json</h2>
+        <pre id="jsonOutput" class="json-output">
+{
+  "lat": 0,
+  "lng": 0,
+  "locationName": "",
+  "lastUpdated": ""
+}
+        </pre>
+        <button id="downloadBtn" class="btn" disabled>
+          Download location.json
+        </button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>For REBELZ staff only.</p>
+    </footer>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // Simple front-end password gate
+    const ADMIN_PASSWORD = "rebelz2025"; // TODO: change this to your own password
+
+    const entered = prompt("Enter admin password:");
+    if (entered !== ADMIN_PASSWORD) {
+      document.body.innerHTML =
+        "<div style='padding:2rem;font-family:system-ui;color:#e5e7eb;background:#020617;min-height:100vh;display:flex;align-items:center;justify-content:center;'><h1>Access denied.</h1></div>";
+      throw new Error("Invalid password");
+    }
+
+    // DOM elements
+    const latInput = document.getElementById("lat");
+    const lngInput = document.getElementById("lng");
+    const nameInput = document.getElementById("locationName");
+    const lastUpdatedInput = document.getElementById("lastUpdated");
+    const useNowBtn = document.getElementById("useNow");
+    const form = document.getElementById("locationForm");
+    const jsonOutput = document.getElementById("jsonOutput");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const previewText = document.getElementById("previewText");
+    const adminMapEl = document.getElementById("adminMap");
+
+    // Default map center
+    const DEFAULT_LAT = 40.7128;
+    const DEFAULT_LNG = -74.0060;
+    const DEFAULT_ZOOM = 13;
+
+    let map = L.map(adminMapEl).setView([DEFAULT_LAT, DEFAULT_LNG], DEFAULT_ZOOM);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+    let marker = L.marker([DEFAULT_LAT, DEFAULT_LNG]).addTo(map);
+
+    function formatNow() {
+      const now = new Date();
+      const options = {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+      };
+      return now.toLocaleString(undefined, options);
+    }
+
+    useNowBtn.addEventListener("click", () => {
+      lastUpdatedInput.value = formatNow();
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const lat = parseFloat(latInput.value);
+      const lng = parseFloat(lngInput.value);
+      const locationName = nameInput.value.trim();
+      const lastUpdated = lastUpdatedInput.value.trim();
+
+      if (Number.isNaN(lat) || Number.isNaN(lng) || !locationName || !lastUpdated) {
+        alert("Please fill in all fields with valid values.");
+        return;
+      }
+
+      const data = {
+        lat,
+        lng,
+        locationName,
+        lastUpdated,
+      };
+
+      const json = JSON.stringify(data, null, 2);
+      jsonOutput.textContent = json;
+      downloadBtn.disabled = false;
+
+      marker.setLatLng([lat, lng]);
+      map.setView([lat, lng], DEFAULT_ZOOM);
+      previewText.textContent = `Preview: ${locationName}`;
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const json = jsonOutput.textContent.trim();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "location.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
