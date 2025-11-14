@@ -1,13 +1,22 @@
 {
-  "lat": 40.7128,
-  "lng": -74.006,
-  "locationName": "Downtown, Main & 5th",
-  "address": "123 Main St, Springfield, NY",
-  "lastUpdated": "2025-11-13 11:45 AM",
+  "lat": 40.490943904911944,
+  "lng": -78.0185901404861,
+  "locationName": "Juniata Brewing Company",
+  "address": "1100 Susquehanna Avenue",
+  "lastUpdated": "11/14/2025, 10:16 AM",
   "schedule": [
-    { "label": "Lunch", "time": "No Service" },
-    { "label": "Dinner", "time": "5:30 PM – 9:00 PM" },
-    { "label": "Late Night", "time": "11:00 PM – 2:15 AM" }
+    {
+      "label": "Lunch",
+      "time": "No Service"
+    },
+    {
+      "label": "Dinner",
+      "time": "5:30 PM – 9:00 PM"
+    },
+    {
+      "label": "Late Night",
+      "time": "11:00 PM – 2:15 AM"
+    }
   ],
   "links": {
     "instagram": "https://instagram.com/eatatrebelz",
