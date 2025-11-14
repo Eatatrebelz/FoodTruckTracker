@@ -35,6 +35,7 @@
       <section class="card card-info">
         <h2>Current Status</h2>
         <p id="statusText">Loading current location…</p>
+        <p id="addressLine" class="sub"></p>
         <p class="sub" id="updatedAt"></p>
         <button id="refreshBtn" class="btn">Refresh Location</button>
       </section>
@@ -50,9 +51,8 @@
 
       <section class="card card-schedule">
         <h2>Today’s Schedule</h2>
-        <ul class="schedule">
-          <li><strong>Evening:</strong> 5:30 PM – 9:00 PM</li>
-          <li><strong>Dinner:</strong> 11:00 PM – 2:15 AM</li>
+        <ul class="schedule" id="scheduleList">
+          <li>Loading hours…</li>
         </ul>
         <p class="sub">
           Check our socials for changes due to weather or private events.
@@ -61,11 +61,8 @@
 
       <section class="card card-links">
         <h2>Stay Connected</h2>
-        <div class="link-grid">
-          <a href="#" class="link-pill">Instagram</a>
-          <a href="#" class="link-pill">TikTok</a>
-          <a href="#" class="link-pill">Website</a>
-          <a href="mailto:info@rebelztruck.com" class="link-pill">Contact</a>
+        <div class="link-grid" id="linksContainer">
+          <!-- Links filled from location.json -->
         </div>
       </section>
     </main>
@@ -85,9 +82,12 @@
   <script>
     const mapElement = document.getElementById("map");
     const statusText = document.getElementById("statusText");
+    const addressLine = document.getElementById("addressLine");
     const updatedAt = document.getElementById("updatedAt");
     const refreshBtn = document.getElementById("refreshBtn");
     const yearSpan = document.getElementById("year");
+    const scheduleList = document.getElementById("scheduleList");
+    const linksContainer = document.getElementById("linksContainer");
     yearSpan.textContent = new Date().getFullYear();
 
     // Default starting position (change to your city if you like)
@@ -104,9 +104,63 @@
 
     let marker = L.marker([DEFAULT_LAT, DEFAULT_LNG]).addTo(map);
 
+    function renderSchedule(schedule) {
+      scheduleList.innerHTML = "";
+      if (!Array.isArray(schedule) || schedule.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No hours posted today.";
+        scheduleList.appendChild(li);
+        return;
+      }
+
+      let shownAny = false;
+      schedule.forEach((item) => {
+        if (!item) return;
+        const label = (item.label || "").trim();
+        const time = (item.time || "").trim();
+        if (!label && !time) return;
+
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${label || "Hours"}:</strong> ${time || ""}`;
+        scheduleList.appendChild(li);
+        shownAny = true;
+      });
+
+      if (!shownAny) {
+        const li = document.createElement("li");
+        li.textContent = "No hours posted today.";
+        scheduleList.appendChild(li);
+      }
+    }
+
+    function renderLinks(links) {
+      linksContainer.innerHTML = "";
+      if (!links || typeof links !== "object") {
+        return;
+      }
+
+      function addLink(label, href) {
+        if (!href || !label) return;
+        const a = document.createElement("a");
+        a.className = "link-pill";
+        a.href = href;
+        a.textContent = label;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        linksContainer.appendChild(a);
+      }
+
+      addLink("Instagram", links.instagram);
+      addLink("TikTok", links.tiktok);
+      addLink("Website", links.website);
+      addLink(links.contactLabel || "Contact", links.contactHref || "");
+    }
+
     async function fetchLocation() {
       try {
         statusText.textContent = "Updating location…";
+        addressLine.textContent = "";
+        updatedAt.textContent = "";
 
         const res = await fetch("location.json?cacheBust=" + Date.now());
         if (!res.ok) {
@@ -118,25 +172,31 @@
         const lng = data.lng;
         const locationName = data.locationName || "On the move";
         const lastUpdated = data.lastUpdated;
+        const address = data.address || "";
+        const schedule = data.schedule || [];
+        const links = data.links || {};
 
-        if (typeof lat !== "number" || typeof lng !== "number") {
-          throw new Error("Invalid coordinates");
+        // Map update (only if coordinates valid)
+        if (typeof lat === "number" && typeof lng === "number") {
+          marker.setLatLng([lat, lng]);
+          map.setView([lat, lng], DEFAULT_ZOOM);
         }
 
-        marker.setLatLng([lat, lng]);
-        map.setView([lat, lng], DEFAULT_ZOOM);
-
         statusText.textContent = `We’re currently at: ${locationName}`;
-        updatedAt.textContent = lastUpdated
-          ? `Last updated: ${lastUpdated}`
-          : "";
+        addressLine.textContent = address ? `Address: ${address}` : "";
+        updatedAt.textContent = lastUpdated ? `Last updated: ${lastUpdated}` : "";
 
+        renderSchedule(schedule);
+        renderLinks(links);
       } catch (err) {
         console.error(err);
         statusText.textContent =
           "We couldn’t load the live location. Try again in a moment.";
+        addressLine.textContent = "";
         updatedAt.textContent =
           "If this keeps happening, the truck might be offline or location.json needs updating.";
+        renderSchedule([]);
+        linksContainer.innerHTML = "";
       }
     }
 
