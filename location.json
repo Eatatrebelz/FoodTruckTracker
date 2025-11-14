@@ -1,6 +1,19 @@
 {
-  "lat": 40.49094,
-  "lng": -78.01871,
-  "locationName": "Juniata Brewing Compant",
-  "lastUpdated": "2025-11-13 2:43 PM"
+  "lat": 40.7128,
+  "lng": -74.006,
+  "locationName": "Downtown, Main & 5th",
+  "address": "123 Main St, Springfield, NY",
+  "lastUpdated": "2025-11-13 11:45 AM",
+  "schedule": [
+    { "label": "Lunch", "time": "No Service" },
+    { "label": "Dinner", "time": "5:30 PM – 9:00 PM" },
+    { "label": "Late Night", "time": "11:00 PM – 2:15 AM" }
+  ],
+  "links": {
+    "instagram": "https://instagram.com/eatatrebelz",
+    "tiktok": "https://tiktok.com/@rebelzfoodtruck",
+    "website": "https://www.fb.com/rebelzcreations",
+    "contactLabel": "Contact",
+    "contactHref": "mailto:contact@eatatrebelz.com"
+  }
 }
