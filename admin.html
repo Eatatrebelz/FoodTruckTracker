@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>REBELZ Admin – Update Truck Location</title>
+  <title>REBELZ Admin – Update Truck Info</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS for the map -->
@@ -26,7 +26,7 @@
         />
         <div>
           <h1>REBELZ Admin</h1>
-          <p>Update the food truck location and download a new location.json.</p>
+          <p>Update location, hours, and links, then download a new location.json.</p>
         </div>
       </div>
     </header>
@@ -36,18 +36,23 @@
         <h2>Location Details</h2>
         <form id="locationForm" class="admin-form">
           <label>
-            Latitude
-            <input type="number" id="lat" step="any" required />
-          </label>
-
-          <label>
-            Longitude
-            <input type="number" id="lng" step="any" required />
-          </label>
-
-          <label>
-            Location name (what customers see)
+            Display location name (short title)
             <input type="text" id="locationName" placeholder="Downtown, Main &amp; 5th" required />
+          </label>
+
+          <label>
+            Address (what customers see)
+            <input type="text" id="address" placeholder="123 Main St, Springfield, NY" />
+          </label>
+
+          <label>
+            Latitude (optional – for map pin)
+            <input type="number" id="lat" step="any" />
+          </label>
+
+          <label>
+            Longitude (optional – for map pin)
+            <input type="number" id="lng" step="any" />
           </label>
 
           <label>
@@ -64,6 +69,72 @@
             <button type="button" class="btn btn-secondary" id="useNow">
               Use current date &amp; time
             </button>
+          </div>
+
+          <hr />
+
+          <h3>Hours / Time Frames</h3>
+          <p class="sub">
+            You can rename “Lunch / Dinner / Late Night” and set any times you like.
+            Only rows with a name or time will show on the public page.
+          </p>
+
+          <label>
+            Time frame 1 name
+            <input type="text" id="scheduleLabel1" placeholder="Lunch" />
+          </label>
+          <label>
+            Time frame 1 hours
+            <input type="text" id="scheduleTime1" placeholder="11:30 AM – 2:30 PM" />
+          </label>
+
+          <label>
+            Time frame 2 name
+            <input type="text" id="scheduleLabel2" placeholder="Dinner" />
+          </label>
+          <label>
+            Time frame 2 hours
+            <input type="text" id="scheduleTime2" placeholder="5:00 PM – 9:00 PM" />
+          </label>
+
+          <label>
+            Time frame 3 name
+            <input type="text" id="scheduleLabel3" placeholder="Late Night" />
+          </label>
+          <label>
+            Time frame 3 hours
+            <input type="text" id="scheduleTime3" placeholder="9:30 PM – 12:00 AM" />
+          </label>
+
+          <hr />
+
+          <h3>Links &amp; Contact</h3>
+          <label>
+            Instagram URL
+            <input type="url" id="instagramUrl" placeholder="https://instagram.com/yourtruck" />
+          </label>
+
+          <label>
+            TikTok URL
+            <input type="url" id="tiktokUrl" placeholder="https://tiktok.com/@yourtruck" />
+          </label>
+
+          <label>
+            Website URL
+            <input type="url" id="websiteUrl" placeholder="https://yourtruck.com" />
+          </label>
+
+          <label>
+            Contact button label
+            <input type="text" id="contactLabel" placeholder="Contact" />
+          </label>
+
+          <label>
+            Contact link (mailto:, tel:, or https://)
+            <input type="text" id="contactHref" placeholder="mailto:info@rebelztruck.com" />
+          </label>
+
+          <div class="admin-buttons">
             <button type="submit" class="btn">
               Update Preview &amp; JSON
             </button>
@@ -89,7 +160,10 @@
   "lat": 0,
   "lng": 0,
   "locationName": "",
-  "lastUpdated": ""
+  "address": "",
+  "lastUpdated": "",
+  "schedule": [],
+  "links": {}
 }
         </pre>
         <button id="downloadBtn" class="btn" disabled>
@@ -122,11 +196,26 @@
     }
 
     // DOM elements
+    const locationNameInput = document.getElementById("locationName");
+    const addressInput = document.getElementById("address");
     const latInput = document.getElementById("lat");
     const lngInput = document.getElementById("lng");
-    const nameInput = document.getElementById("locationName");
     const lastUpdatedInput = document.getElementById("lastUpdated");
     const useNowBtn = document.getElementById("useNow");
+
+    const scheduleLabel1 = document.getElementById("scheduleLabel1");
+    const scheduleTime1 = document.getElementById("scheduleTime1");
+    const scheduleLabel2 = document.getElementById("scheduleLabel2");
+    const scheduleTime2 = document.getElementById("scheduleTime2");
+    const scheduleLabel3 = document.getElementById("scheduleLabel3");
+    const scheduleTime3 = document.getElementById("scheduleTime3");
+
+    const instagramUrlInput = document.getElementById("instagramUrl");
+    const tiktokUrlInput = document.getElementById("tiktokUrl");
+    const websiteUrlInput = document.getElementById("websiteUrl");
+    const contactLabelInput = document.getElementById("contactLabel");
+    const contactHrefInput = document.getElementById("contactHref");
+
     const form = document.getElementById("locationForm");
     const jsonOutput = document.getElementById("jsonOutput");
     const downloadBtn = document.getElementById("downloadBtn");
@@ -134,8 +223,8 @@
     const adminMapEl = document.getElementById("adminMap");
 
     // Default map center
-    const DEFAULT_LAT = 40.49094;
-    const DEFAULT_LNG = -78.01871;
+    const DEFAULT_LAT = 40.7128;
+    const DEFAULT_LNG = -74.0060;
     const DEFAULT_ZOOM = 13;
 
     let map = L.map(adminMapEl).setView([DEFAULT_LAT, DEFAULT_LNG], DEFAULT_ZOOM);
@@ -161,33 +250,113 @@
       lastUpdatedInput.value = formatNow();
     });
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+    function populateFromData(data) {
+      if (!data || typeof data !== "object") return;
 
-      const lat = parseFloat(latInput.value);
-      const lng = parseFloat(lngInput.value);
-      const locationName = nameInput.value.trim();
-      const lastUpdated = lastUpdatedInput.value.trim();
+      locationNameInput.value = data.locationName || "";
+      addressInput.value = data.address || "";
+      if (typeof data.lat === "number") latInput.value = data.lat;
+      if (typeof data.lng === "number") lngInput.value = data.lng;
+      lastUpdatedInput.value = data.lastUpdated || "";
 
-      if (Number.isNaN(lat) || Number.isNaN(lng) || !locationName || !lastUpdated) {
-        alert("Please fill in all fields with valid values.");
-        return;
+      const schedule = data.schedule || [];
+      if (schedule[0]) {
+        scheduleLabel1.value = schedule[0].label || "";
+        scheduleTime1.value = schedule[0].time || "";
+      }
+      if (schedule[1]) {
+        scheduleLabel2.value = schedule[1].label || "";
+        scheduleTime2.value = schedule[1].time || "";
+      }
+      if (schedule[2]) {
+        scheduleLabel3.value = schedule[2].label || "";
+        scheduleTime3.value = schedule[2].time || "";
       }
 
+      const links = data.links || {};
+      instagramUrlInput.value = links.instagram || "";
+      tiktokUrlInput.value = links.tiktok || "";
+      websiteUrlInput.value = links.website || "";
+      contactLabelInput.value = links.contactLabel || "";
+      contactHrefInput.value = links.contactHref || "";
+    }
+
+    async function loadExistingConfig() {
+      try {
+        const res = await fetch("location.json?cacheBust=" + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        populateFromData(data);
+
+        // Also update preview + JSON
+        buildAndRenderJSON();
+      } catch (e) {
+        console.warn("Could not load existing location.json:", e);
+      }
+    }
+
+    function buildAndRenderJSON() {
+      const latVal = latInput.value.trim();
+      const lngVal = lngInput.value.trim();
+      const lat = latVal === "" ? null : parseFloat(latVal);
+      const lng = lngVal === "" ? null : parseFloat(lngVal);
+
+      const locationName = locationNameInput.value.trim();
+      const address = addressInput.value.trim();
+      const lastUpdated = lastUpdatedInput.value.trim();
+
+      if (!locationName || !lastUpdated) {
+        alert("Please fill in at least a location name and last updated time.");
+        return null;
+      }
+
+      const schedule = [
+        { label: scheduleLabel1.value.trim(), time: scheduleTime1.value.trim() },
+        { label: scheduleLabel2.value.trim(), time: scheduleTime2.value.trim() },
+        { label: scheduleLabel3.value.trim(), time: scheduleTime3.value.trim() },
+      ].filter((item) => item.label || item.time);
+
+      const links = {
+        instagram: instagramUrlInput.value.trim(),
+        tiktok: tiktokUrlInput.value.trim(),
+        website: websiteUrlInput.value.trim(),
+        contactLabel: contactLabelInput.value.trim(),
+        contactHref: contactHrefInput.value.trim(),
+      };
+
       const data = {
-        lat,
-        lng,
+        lat: typeof lat === "number" && !Number.isNaN(lat) ? lat : null,
+        lng: typeof lng === "number" && !Number.isNaN(lng) ? lng : null,
         locationName,
+        address,
         lastUpdated,
+        schedule,
+        links,
       };
 
       const json = JSON.stringify(data, null, 2);
       jsonOutput.textContent = json;
       downloadBtn.disabled = false;
 
-      marker.setLatLng([lat, lng]);
-      map.setView([lat, lng], DEFAULT_ZOOM);
-      previewText.textContent = `Preview: ${locationName}`;
+      // Map preview
+      if (data.lat !== null && data.lng !== null) {
+        marker.setLatLng([data.lat, data.lng]);
+        map.setView([data.lat, data.lng], DEFAULT_ZOOM);
+        previewText.textContent = `Preview: ${locationName} — map set to coordinates.`;
+      } else {
+        marker.setLatLng([DEFAULT_LAT, DEFAULT_LNG]);
+        map.setView([DEFAULT_LAT, DEFAULT_LNG], DEFAULT_ZOOM);
+        previewText.textContent = address
+          ? `Preview: ${locationName} — ${address} (no coordinates set, map shows default city).`
+          : `Preview: ${locationName} (no coordinates set, map shows default city).`;
+      }
+
+      return data;
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      buildAndRenderJSON();
     });
 
     downloadBtn.addEventListener("click", () => {
@@ -202,6 +371,9 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
+
+    // Load existing config if available
+    loadExistingConfig();
   </script>
 </body>
 </html>
