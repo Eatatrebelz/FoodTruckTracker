@@ -1,9 +1,9 @@
 {
-  "lat": 40.490943904911944,
-  "lng": -78.0185901404861,
-  "locationName": "Juniata Brewing Company first, then Juniata College Ellis Parking Lot",
-  "address": "1100 Susquehanna Avenue",
-  "lastUpdated": "11/14/2025, 10:16 AM",
+  "lat": 40.7990988,
+  "lng": -77.8541848,
+  "locationName": "Calder Commons - employee parking area",
+  "address": "520 Calder Way, State College, PA 16801",
+  "lastUpdated": "11/15/2025, 7:47 PM",
   "schedule": [
     {
       "label": "Lunch",
@@ -11,11 +11,11 @@
     },
     {
       "label": "Dinner",
-      "time": "5:30 PM – 9:00 PM"
+      "time": "5:30 PM â€“ 9:00 PM"
     },
     {
       "label": "Late Night",
-      "time": "11:00 PM – 2:15 AM"
+      "time": "11:00 PM â€“ 2:30 AM"
     }
   ],
   "links": {
